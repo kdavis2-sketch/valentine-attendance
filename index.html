@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='UTF-8'>
+<title>Valentine Attendance</title>
+<style>
+html,body{margin:0;padding:0;overflow:hidden;}
+
+#frame{
+ position:relative;width:100vw;height:100vh;
+ background:white;padding:25px;box-sizing:border-box;
+}
+
+#bg{
+ position:absolute;top:25px;left:25px;right:25px;bottom:25px;
+ background:url('background.png') center/contain no-repeat;
+ background-size:90%;
+}
+
+/* Dropzones */
+.dropzone{
+ position:absolute;top:35%;width:42%;height:55%;
+}
+#absent{left:9%;} 
+#present{right:9%;}
+
+.heart{
+ width:55px;height:55px;border-radius:50%;
+ position:absolute;display:flex;align-items:center;justify-content:center;
+ font-size:19px;font-weight:bold;color:white;
+ box-shadow:0 3px 6px rgba(0,0,0,0.35);
+ cursor:grab;border:3px solid white;
+}
+.heart::before{
+ content:"❤";position:absolute;font-size:42px;
+ color:rgba(255,255,255,0.22);z-index:-1;
+}
+
+.heart.sparkle{animation:spark .45s;}
+@keyframes spark{0%,100%{transform:scale(1);}50%{transform:scale(1.25);} }
+
+#resetBtn{
+ position:absolute;bottom:4%;left:50%;transform:translateX(-50%);
+ background:#ffb6ce;color:#a4003a;padding:10px 26px;
+ font-size:22px;font-weight:bold;border-radius:18px;
+ box-shadow:0 3px 6px rgba(0,0,0,0.3);cursor:pointer;z-index:20;
+}
+</style>
+</head>
+<body>
+
+<div id="frame">
+ <div id="bg"></div>
+ <div id="resetBtn">Reset Attendance</div>
+ <div id="absent" class="dropzone"></div>
+ <div id="present" class="dropzone"></div>
+</div>
+
+<script>
+const colors=["#d9c2ea","#c9e7ea","#f8a5c9","#e25a6a"];
+const frame=document.getElementById('frame');
+const abs=document.getElementById('absent');
+
+function save(){
+ let d={};document.querySelectorAll('.heart').forEach(h=>d[h.dataset.num]={left:h.style.left,top:h.style.top});
+ localStorage.setItem('attShift075',JSON.stringify(d));
+}
+function load(){
+ let d=JSON.parse(localStorage.getItem('attShift075')||"{}");
+ for(let k in d){let h=document.querySelector('.heart[data-num="'+k+'"]');if(h){h.style.left=d[k].left;h.style.top=d[k].top;}}
+}
+
+function layoutGrid(){
+ const r=abs.getBoundingClientRect();
+ let cols=5, rows=5, spacing=68;
+
+ let gridW=cols*spacing, gridH=rows*spacing;
+
+ let startX=(r.width-gridW)/2 + 51;   /* shift RIGHT by .75 columns */
+ let startY=(r.height-gridH)/2;
+
+ let i=0;
+ document.querySelectorAll('.heart').forEach(h=>{
+  let row=Math.floor(i/cols);
+  let col=i%cols;
+  h.style.left=(r.left+startX+col*spacing)+'px';
+  h.style.top=(r.top+startY+row*spacing)+'px';
+  i++;
+ });
+}
+
+for(let i=1;i<=25;i++){
+ let h=document.createElement('div');
+ h.className='heart';h.dataset.num=i;h.textContent=i;
+ h.style.background=colors[(i-1)%colors.length];
+ frame.appendChild(h);
+
+ h.onmousedown=e=>{
+  let r=h.getBoundingClientRect();
+  let ox=e.clientX-r.left, oy=e.clientY-r.top;
+  document.onmousemove=ev=>{h.style.left=(ev.clientX-ox)+'px';h.style.top=(ev.clientY-oy)+'px';}
+  document.onmouseup=()=>{h.classList.add('sparkle');setTimeout(()=>h.classList.remove('sparkle'),450);
+    document.onmousemove=null;document.onmouseup=null;save();}
+ };
+}
+
+document.getElementById('resetBtn').onclick=()=>{layoutGrid();save();};
+
+layoutGrid();load();
+</script>
+
+</body>
+</html>
